@@ -158,6 +158,87 @@
 
 ---
 
+## 5.1 Compute Engine e2-micro へのデプロイ手順（Always Free 枠）
+
+常時オンラインを無料枠で運用したい場合の最小構成例です。リージョンは Always Free 対象（例: `us-west1`, `us-central1`）。
+
+1. **VM 作成**
+   ```bash
+   gcloud compute instances create tatekae-bot \
+     --machine-type=e2-micro \
+     --zone=us-west1-b \
+     --boot-disk-type=pd-standard \
+     --boot-disk-size=20GB \
+     --image-family=debian-12 \
+     --image-project=debian-cloud
+   ```
+   - SSH 接続は IAP 経由にするか、必要な IP のみに制限してください。
+
+2. **OS 初期設定**
+   ```bash
+   sudo apt-get update && sudo apt-get upgrade -y
+   sudo apt-get install -y curl git build-essential
+   ```
+   - 自動更新（`unattended-upgrades`）を有効化するとパッチ適用が楽です。
+
+3. **Node.js 18 LTS 導入**（例: NodeSource）
+   ```bash
+   curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+   sudo apt-get install -y nodejs
+   node -v  # v18.x を確認
+   ```
+
+4. **リポジトリ配置**
+   ```bash
+   sudo useradd -m -s /bin/bash botuser
+   sudo mkdir -p /opt/tatekae-seisan-bot
+   sudo chown botuser:botuser /opt/tatekae-seisan-bot
+   sudo -u botuser git clone https://github.com/bestat/tatekae-seisan-bot.git /opt/tatekae-seisan-bot
+   cd /opt/tatekae-seisan-bot
+   sudo -u botuser npm install
+   sudo -u botuser npm run build
+   ```
+
+5. **環境変数配置**
+   - `/opt/tatekae-seisan-bot/.env` を作成し、Slack/Google のシークレットを記載。
+   - ファイル権限は `chmod 600`、所有者は `botuser` にします。
+
+6. **systemd サービス化**
+   `/etc/systemd/system/tatekae-bot.service`:
+   ```ini
+   [Unit]
+   Description=Tatekae Seisan Bot (SlackExpense)
+   After=network.target
+
+   [Service]
+   Type=simple
+   WorkingDirectory=/opt/tatekae-seisan-bot
+   EnvironmentFile=/opt/tatekae-seisan-bot/.env
+   ExecStart=/usr/bin/node dist/index.js
+   Restart=always
+   User=botuser
+
+   [Install]
+   WantedBy=multi-user.target
+   ```
+   ```bash
+   sudo systemctl daemon-reload
+   sudo systemctl enable --now tatekae-bot
+   sudo systemctl status tatekae-bot
+   ```
+
+7. **ログ・監視**
+   - Journald: `journalctl -u tatekae-bot -f`
+   - Stackdriver (Cloud Logging) を有効化しておくと GUI で確認できます。
+
+8. **バックアップ & セキュリティ**
+   - 月次でディスクスナップショットを取得。
+   - SSH は IAP トンネル推奨、`ufw` や Cloud Armor でアクセス制御。
+
+> Always Free 枠は 1 プロジェクトあたり e2-micro 1 台のみ対象です。別用途で枠を使っている場合は課金が発生する点に注意してください。
+
+---
+
 ## 6. チェックリスト
 
 - [ ] Slack App の Bot Token / Signing Secret / App Token を取得し `.env` に設定
