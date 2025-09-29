@@ -51,7 +51,7 @@
    - Request URL は Socket Mode のためダミーで OK。
    - Short Description: `精算完了に更新`
 7. **Bot をチャンネルへ招待**
-   - `#finance-expense`（申請チャンネル）と経理チャンネル（例: `#finance-ops`）へ Bot を追加。
+   - グローバルショートカットで申請を受け付ける `#finance-expense` に Bot を追加。
 
 > **確認ポイント**: Slack App 側ですべての設定変更後に再インストールが必要な場合があります。
 
