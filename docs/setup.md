@@ -97,17 +97,15 @@
    | P | Sheet Row URL | 行リンク（自動生成）|
    | Q | Created At | ISO8601 タイムスタンプ |
    | R | Updated At | ISO8601 タイムスタンプ |
-3. `PERSONAL_SHEET_MAP` に Slack User ID をキーとして、以下形式の JSON を設定：
+3. 共通シートを `SHEET_TARGET` もしくは `DEFAULT_SHEET_TARGET`（後方互換用）として以下形式の JSON で指定：
    ```json
    {
-     "U0123456789": {
-       "spreadsheetId": "1AbCdEfGhIjK",
-       "tabName": "Requests",
-       "gid": "0"
-     }
+     "spreadsheetId": "1AbCdEfGhIjK",
+     "tabName": "Requests",
+     "gid": "0"
    }
    ```
-4. マッピングされていないユーザーの受け皿として、共通シートを `DEFAULT_SHEET_TARGET` に指定可能です（同じ JSON 形式）。
+   - `gid` は任意。指定しない場合はタブ名ベースでアクセスします。
 
 > **Slack User ID の取得方法**: Slack で `@ユーザー` を右クリック→「プロフィールを表示」→その他→「メンバーIDをコピー」。
 
@@ -128,8 +126,7 @@
 | `GOOGLE_DRIVE_ROOT_FOLDER_ID` | 領収書保存ルートフォルダのID |
 | `GOOGLE_SHARED_DRIVE_ID` | 共有ドライブを使う場合は指定（任意）|
 | `GOOGLE_SHARING_DOMAIN` | 自動共有するドメイン（任意）|
-| `PERSONAL_SHEET_MAP` | Slack User ID → Sheet 情報の JSON |
-| `DEFAULT_SHEET_TARGET` | マッピングされていないユーザーのデフォルトシート |
+| `SHEET_TARGET` | 申請を記録するシート情報の JSON（`DEFAULT_SHEET_TARGET` でも可）|
 | `REQUEST_ID_PREFIX` | 受付番号のプレフィックス（例: `EXP`）|
 | `RECEIPT_DM_TEMPLATE` | モーダル送信直後に送る DM テキスト。`{threadLink}` プレースホルダ使用可 |
 | `APPROVE_REACTION` / `REJECT_REACTION` | ステータス更新に使うリアクション（デフォルト: `white_check_mark` / `x`）|
@@ -245,8 +242,8 @@
 - [ ] グローバルショートカット・スラッシュコマンド・Socket Mode を有効化
 - [ ] `#finance-expense` と経理チャンネルへ Bot を追加
 - [ ] Google Drive ルートフォルダを作成しサービスアカウントへ共有
-- [ ] 個人シートを作成し、1 行目にヘッダーを設定＆サービスアカウント共有
-- [ ] `PERSONAL_SHEET_MAP` を Slack User ID ベースで作成
+- [ ] 共通シートを作成し、1 行目にヘッダーを設定＆サービスアカウント共有
+- [ ] `SHEET_TARGET`（もしくは `DEFAULT_SHEET_TARGET`）を設定
 - [ ] `.env` を配置して `npm run dev` で接続テスト
 
 以上で初期構築は完了です。追加のカスタマイズ要件があれば `src/services/expense-service.ts` を中心に調整してください。

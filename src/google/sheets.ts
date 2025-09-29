@@ -177,33 +177,11 @@ export class SheetsService {
   }
 
   async findRecordByThreadTs(threadTs: string): Promise<SheetRecord | undefined> {
-    const targets = [
-      ...Object.values(this.config.google.personalSheetMap),
-      ...(this.config.google.defaultSheet ? [this.config.google.defaultSheet] : []),
-    ];
-
-    for (const target of targets) {
-      const record = await this.findRecordInSheet(target, threadTs);
-      if (record) {
-        return record;
-      }
-    }
-    return undefined;
+    return this.findRecordInSheet(this.config.google.sheet, threadTs);
   }
 
   async findRecordByRequestId(requestId: string): Promise<SheetRecord | undefined> {
-    const targets = [
-      ...Object.values(this.config.google.personalSheetMap),
-      ...(this.config.google.defaultSheet ? [this.config.google.defaultSheet] : []),
-    ];
-
-    for (const target of targets) {
-      const record = await this.findRecordInSheet(target, undefined, requestId);
-      if (record) {
-        return record;
-      }
-    }
-    return undefined;
+    return this.findRecordInSheet(this.config.google.sheet, undefined, requestId);
   }
 
   private async findRecordInSheet(

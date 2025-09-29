@@ -6,10 +6,6 @@ export interface SheetTarget {
   gid?: string;
 }
 
-export interface PersonalSheetMap {
-  [slackUserId: string]: SheetTarget;
-}
-
 export interface AppConfig {
   environment: 'development' | 'production' | 'test';
   timezone: string;
@@ -30,8 +26,7 @@ export interface AppConfig {
     driveRootFolderId: string;
     sharedDriveId?: string;
     sharingDomain?: string;
-    personalSheetMap: PersonalSheetMap;
-    defaultSheet?: SheetTarget;
+    sheet: SheetTarget;
   };
   app: {
     requestIdPrefix: string;
@@ -50,45 +45,31 @@ function requireEnv(name: string): string {
   return value;
 }
 
-function parseSheetTarget(value: string | undefined): SheetTarget | undefined {
-  if (!value) {
-    return undefined;
-  }
+function parseSheetTarget(value: string): SheetTarget {
   try {
-    const parsed = JSON.parse(value);
-    if (!parsed.spreadsheetId || !parsed.tabName) {
-      throw new Error('Missing spreadsheetId or tabName');
+    const parsed = JSON.parse(value) as Partial<SheetTarget>;
+    if (!parsed.spreadsheetId) {
+      throw new Error('Missing spreadsheetId');
     }
-    return parsed as SheetTarget;
+    return {
+      spreadsheetId: parsed.spreadsheetId,
+      tabName: parsed.tabName ?? process.env.DEFAULT_SHEET_TAB_NAME ?? 'Requests',
+      gid: parsed.gid,
+    };
   } catch (error) {
     throw new Error(`Failed to parse sheet target JSON: ${error instanceof Error ? error.message : String(error)}`);
-  }
-}
-
-function parsePersonalSheetMap(value: string | undefined): PersonalSheetMap {
-  if (!value) {
-    return {};
-  }
-  try {
-    const parsed = JSON.parse(value) as Record<string, { spreadsheetId: string; tabName?: string; gid?: string }>;
-    return Object.fromEntries(
-      Object.entries(parsed).map(([key, target]) => [
-        key,
-        {
-          spreadsheetId: target.spreadsheetId,
-          tabName: target.tabName ?? process.env.DEFAULT_SHEET_TAB_NAME ?? 'Requests',
-          gid: target.gid,
-        },
-      ]),
-    );
-  } catch (error) {
-    throw new Error(`Failed to parse PERSONAL_SHEET_MAP JSON: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
 export function loadConfig(): AppConfig {
   const environment = (process.env.NODE_ENV ?? 'development') as AppConfig['environment'];
   const timezone = process.env.APP_TIMEZONE ?? 'Asia/Tokyo';
+
+  const sheetTargetValue = process.env.SHEET_TARGET ?? process.env.DEFAULT_SHEET_TARGET;
+  if (!sheetTargetValue) {
+    throw new Error('Environment variable SHEET_TARGET (or DEFAULT_SHEET_TARGET) is required');
+  }
+  const sheetTarget = parseSheetTarget(sheetTargetValue);
 
   const config: AppConfig = {
     environment,
@@ -110,8 +91,7 @@ export function loadConfig(): AppConfig {
       driveRootFolderId: requireEnv('GOOGLE_DRIVE_ROOT_FOLDER_ID'),
       sharedDriveId: process.env.GOOGLE_SHARED_DRIVE_ID,
       sharingDomain: process.env.GOOGLE_SHARING_DOMAIN,
-      personalSheetMap: parsePersonalSheetMap(process.env.PERSONAL_SHEET_MAP),
-      defaultSheet: parseSheetTarget(process.env.DEFAULT_SHEET_TARGET),
+      sheet: sheetTarget,
     },
     app: {
       requestIdPrefix: process.env.REQUEST_ID_PREFIX ?? 'EXP',
@@ -123,10 +103,6 @@ export function loadConfig(): AppConfig {
       maxFilenameTitleLength: Number(process.env.MAX_FILENAME_TITLE_LENGTH ?? '20'),
     },
   };
-
-  if (!config.google.defaultSheet && Object.keys(config.google.personalSheetMap).length === 0) {
-    throw new Error('Either DEFAULT_SHEET_TARGET or PERSONAL_SHEET_MAP must be provided');
-  }
 
   return config;
 }

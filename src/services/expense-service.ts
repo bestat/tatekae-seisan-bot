@@ -330,15 +330,8 @@ export class ExpenseService {
     return `*${params.requestId}* 立替精算申請\n• 申請者: <@${params.applicantSlackId}> (${params.applicantName})\n• 経費内容: ${params.expenseTitle}\n• 金額: ${amountStr} ${this.config.app.currency}\n• 利用日: ${usageDateStr}${remarks}`;
   }
 
-  private resolveSheetTarget(slackUserId: string): SheetTarget {
-    const personal = this.config.google.personalSheetMap[slackUserId];
-    if (personal) {
-      return personal;
-    }
-    if (this.config.google.defaultSheet) {
-      return this.config.google.defaultSheet;
-    }
-    throw new Error('Sheet target not configured');
+  private resolveSheetTarget(_slackUserId: string): SheetTarget {
+    return this.config.google.sheet;
   }
 
   parseSubmission(view: ViewSubmitAction['view']): ParsedSubmission {
@@ -386,13 +379,12 @@ export class ExpenseService {
   }
 
   private resolveSheetTargetBySpreadsheetId(spreadsheetId: string, fallbackTab: string): SheetTarget {
-    const targets = [
-      ...Object.values(this.config.google.personalSheetMap),
-      ...(this.config.google.defaultSheet ? [this.config.google.defaultSheet] : []),
-    ];
-    const found = targets.find((target) => target.spreadsheetId === spreadsheetId && target.tabName === fallbackTab);
-    if (found) {
-      return found;
+    const sheet = this.config.google.sheet;
+    if (sheet.spreadsheetId === spreadsheetId) {
+      if (sheet.tabName === fallbackTab) {
+        return sheet;
+      }
+      return { ...sheet, tabName: fallbackTab };
     }
     // fallback to provided identifiers without gid information
     return { spreadsheetId, tabName: fallbackTab };
