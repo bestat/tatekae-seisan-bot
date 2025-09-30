@@ -15,7 +15,7 @@ Slackベースの立替精算ワークフローを自動化する Node.js アプ
 - Google Workspace (Drive / Sheets API) とサービスアカウント
 
 ## セットアップ概要
-1. Slack AppでBotを作成し、ショートカット・スラッシュコマンド・イベント・スコープを設定
+1. Slack AppでBotを作成し、ショートカット・スラッシュコマンド・イベント・スコープを設定（Socket Mode 運用のため Signing Secret は不要。必要なのは Bot Token と App-Level Token）
 2. Google Cloudでサービスアカウントを作成し、Drive/Sheets権限を付与
 3. 領収書保存用のDriveフォルダとスプレッドシート（個人ごと or デフォルト）を準備
 4. `.env` に必要な環境変数を設定

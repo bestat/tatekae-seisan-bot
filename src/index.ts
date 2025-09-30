@@ -16,7 +16,6 @@ async function bootstrap() {
 
   const app = new App({
     token: config.slack.botToken,
-    signingSecret: config.slack.signingSecret,
     appToken: config.slack.appToken,
     socketMode: true,
   });

@@ -11,7 +11,6 @@ export interface AppConfig {
   timezone: string;
   slack: {
     botToken: string;
-    signingSecret: string;
     appToken: string;
     financeChannelId: string;
     accountingChannelId: string;
@@ -76,7 +75,6 @@ export function loadConfig(): AppConfig {
     timezone,
     slack: {
       botToken: requireEnv('SLACK_BOT_TOKEN'),
-      signingSecret: requireEnv('SLACK_SIGNING_SECRET'),
       appToken: requireEnv('SLACK_APP_TOKEN'),
       financeChannelId: requireEnv('EXPENSE_CHANNEL_ID'),
       accountingChannelId: requireEnv('ACCOUNTING_CHANNEL_ID'),

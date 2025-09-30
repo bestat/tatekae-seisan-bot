@@ -32,7 +32,8 @@
      - `reactions:read`
      - `reactions:write`
      - `users:read`
-   - 権限追加後、「Install to Workspace」で Bot Token (`SLACK_BOT_TOKEN`) と Signing Secret (`SLACK_SIGNING_SECRET`) を取得。
+   - 権限追加後、「Install to Workspace」で Bot Token (`SLACK_BOT_TOKEN`) を取得。
+   - 補足: Socket Mode のみで運用する本リポジトリでは Signing Secret は不要です（HTTP エンドポイントを使う場合のみ使用）。
 4. **Event Subscriptions**
    - *Event Subscriptions* を ON。Request URL は Socket Mode の場合ダミーで可（空でも可）。
    - *Subscribe to bot events* に以下を追加:
@@ -118,7 +119,7 @@
 | 変数 | 説明 |
 |------|------|
 | `SLACK_BOT_TOKEN` | OAuth & Permissions で発行される Bot User OAuth Token |
-| `SLACK_SIGNING_SECRET` | Basic Information で確認できる Signing Secret |
+| `SLACK_SIGNING_SECRET` | Socket Mode のみの場合は未使用（HTTP エンドポイント運用時のみ） |
 | `SLACK_APP_TOKEN` | Socket Mode 用 App-Level Token (connections:write) |
 | `EXPENSE_CHANNEL_ID` | 申請を受け付けるチャンネルID（例: `C0123456789`）|
 | `ACCOUNTING_CHANNEL_ID` | 経理通知チャンネルID |
