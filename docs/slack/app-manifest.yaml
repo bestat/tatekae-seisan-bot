@@ -1,0 +1,59 @@
+# Slack App manifest for Tatekae Seisan Bot (Socket Mode)
+# Usage:
+# 1. Go to https://api.slack.com/apps → Create New App → From an app manifest
+# 2. Choose your workspace and paste this YAML
+# 3. After creation, issue an App-Level Token (xapp) with `connections:write`
+# 4. Install the app to the workspace to obtain the Bot Token (xoxb)
+
+display_information:
+  name: Tatekae Seisan Bot
+  description: Expense workflow bot (receipts to Drive, rows to Sheets)
+  background_color: "#2c2c2c"
+
+features:
+  bot_user:
+    display_name: Tatekae Seisan Bot
+    always_online: true
+  shortcuts:
+    - name: 経費申請
+      type: global
+      callback_id: expense_request  # matches .env: EXPENSE_SHORTCUT_CALLBACK_ID
+      description: 立替精算申請モーダルを開く
+  slash_commands:
+    - command: /expense-complete
+      description: 精算完了に更新
+      should_escape: false
+
+oauth_config:
+  scopes:
+    bot:
+      - app_mentions:read
+      - channels:history
+      - channels:read
+      - chat:write
+      - chat:write.public
+      - commands
+      - files:read
+      - files:write
+      - groups:history
+      - im:history
+      - im:write
+      - reactions:read
+      - reactions:write
+      - users:read
+
+settings:
+  event_subscriptions:
+    request_url: ""  # Socket Mode only; not used
+    bot_events:
+      - message.channels
+      - message.groups
+      - message.im
+      - reaction_added
+  interactivity:
+    is_enabled: true
+    request_url: ""  # Socket Mode only; not used
+  socket_mode_enabled: true
+  org_deploy_enabled: false
+  token_rotation_enabled: false
+
