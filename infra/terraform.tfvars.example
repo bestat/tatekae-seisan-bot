@@ -1,0 +1,10 @@
+# Required
+project_id = "your-gcp-project-id"
+
+# Optional overrides
+#region = "us-central1"
+#zone   = "us-central1-a"
+#instance_name = "tatekae-bot"
+#service_account_id = "tatekae-bot"
+#use_secret_manager = true
+#secret_id          = "tatekae-seisan-env"

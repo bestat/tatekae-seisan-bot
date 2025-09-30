@@ -22,6 +22,23 @@ Slackベースの立替精算ワークフローを自動化する Node.js アプ
 
 詳細な手順は `docs/setup.md` を参照してください。
 
+## Terraform デプロイ
+Google Cloud の Always Free 対象である Compute Engine e2-micro を使う構成を Terraform で管理できます。初回セットアップは以下の流れです（Billing 有効化済みのプロジェクトが前提）。
+
+```bash
+# プロジェクトルートで実行
+cd infra
+cp terraform.tfvars.example terraform.tfvars   # 任意
+# 上記ファイルで project_id 等を編集
+terraform init
+terraform plan
+terraform apply
+```
+
+- `terraform.tfvars` で最低限 `project_id` を設定してください。その他 `region`, `zone`, `service_account_id` などは `infra/variables.tf` のデフォルト値で動作します。
+- Secret Manager から `.env` を取得したい場合は、Terraform 側で該当シークレットを作成し `use_secret_manager = true`, `secret_id = "your-secret"` をセットします。Secret Manager を使わない場合、VM 起動後に `/opt/tatekae-seisan-bot/.env` を手動で更新します。
+- `terraform destroy` を実行すると VM と `.env`（Secret Manager ではなくローカルにある場合も含む）が削除されるため、実運用ではバックアップ手段を確保してください。
+
 ## 開発コマンド
 ```bash
 npm install
@@ -36,6 +53,7 @@ npm start   # ビルド済み dist を実行
 - `src/google/`: Google Drive / Sheets クライアント
 - `src/slack/views.ts`: モーダルなどのSlack UI定義
 - `docs/setup.md`: 管理者向けセットアップガイド
+- `infra/`: Terraform 管理用ディレクトリ
 
 ## テスト
 現時点では自動テストは未整備です。ローカルで `npm run dev` を起動し、Slackのワークスペースで動作確認してください。
