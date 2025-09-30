@@ -69,6 +69,12 @@ variable "repo_url" {
   default     = "https://github.com/bestat/tatekae-seisan-bot.git"
 }
 
+variable "repo_token_secret_id" {
+  description = "Secret Manager に保存した GitHub PAT のシークレットID（プライベートリポジトリを clone する場合に指定）。空なら認証なしのURLを使用。"
+  type        = string
+  default     = ""
+}
+
 variable "service_name" {
   description = "systemd サービス名。"
   type        = string

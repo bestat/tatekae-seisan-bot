@@ -37,6 +37,10 @@ terraform apply
 
 - `terraform.tfvars` で最低限 `project_id` を設定してください。その他 `region`, `zone`, `service_account_id` などは `infra/variables.tf` のデフォルト値で動作します。
 - Secret Manager から `.env` を取得したい場合は、Terraform 側で該当シークレットを作成し `use_secret_manager = true`, `secret_id = "your-secret"` をセットします。Secret Manager を使わない場合、VM 起動後に `/opt/tatekae-seisan-bot/.env` を手動で更新します。
+- リポジトリがプライベートの場合は、GitHub PAT を Secret Manager に保存して `repo_token_secret_id` を設定してください。起動スクリプトが PAT を取得し、`git clone` に埋め込んでクローンします。
+  - 例: `gcloud secrets create github_pat_tatekae --replication-policy=automatic`
+  - 例: `gcloud secrets versions add github_pat_tatekae --data-file=- <<< "$GITHUB_PAT"`
+  - `infra/terraform.tfvars`: `repo_token_secret_id = "github_pat_tatekae"`
 - `terraform destroy` を実行すると VM と `.env`（Secret Manager ではなくローカルにある場合も含む）が削除されるため、実運用ではバックアップ手段を確保してください。
 
 ## 開発コマンド

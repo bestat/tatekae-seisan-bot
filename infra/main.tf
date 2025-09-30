@@ -28,6 +28,11 @@ locals {
     "roles/monitoring.metricWriter",
     "roles/secretmanager.secretAccessor",
   ]
+
+  need_secret_access = (
+    (var.use_secret_manager && var.secret_id != "") ||
+    (var.repo_token_secret_id != "")
+  )
 }
 
 resource "google_project_service" "enabled" {
@@ -44,9 +49,8 @@ resource "google_service_account" "bot" {
 }
 
 resource "google_project_iam_member" "bot_roles" {
-  for_each = {
-    for role in local.iam_roles :
-    role => role if !(role == "roles/secretmanager.secretAccessor" && (!var.use_secret_manager || var.secret_id == ""))
+  for_each = { for role in local.iam_roles :
+    role => role if !(role == "roles/secretmanager.secretAccessor" && !local.need_secret_access)
   }
 
   project = var.project_id
@@ -91,6 +95,7 @@ resource "google_compute_instance" "bot" {
     use_secret_manager = var.use_secret_manager
     project_id         = var.project_id
     secret_id          = var.secret_id
+    github_pat_secret_id = var.repo_token_secret_id
   })
 
   service_account {
