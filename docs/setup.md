@@ -179,11 +179,11 @@
    ```
    - 自動更新（`unattended-upgrades`）を有効化するとパッチ適用が楽です。
 
-3. **Node.js 18 LTS 導入**（例: NodeSource）
+3. **Node.js 20 LTS 導入**（例: NodeSource）
    ```bash
-   curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+   curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
    sudo apt-get install -y nodejs
-   node -v  # v18.x を確認
+   node -v  # v20.x を確認
    ```
 
 4. **リポジトリ配置**

@@ -94,9 +94,9 @@ variable "app_user" {
 }
 
 variable "node_version" {
-  description = "Node.js のメジャーバージョン (例: 18)。"
+  description = "Node.js のメジャーバージョン (例: 20)。"
   type        = string
-  default     = "18"
+  default     = "20"
 }
 
 variable "use_secret_manager" {

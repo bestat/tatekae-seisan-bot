@@ -10,3 +10,9 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 infra/terraform.tfvars
+
+# Terraform artifacts
+**/.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.tfstate.lock.info

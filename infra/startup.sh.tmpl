@@ -33,10 +33,48 @@ retry apt-get install -y \
   build-essential \
   python3
 
+# Add swap (3GB) to avoid OOM during TypeScript build on e2-micro
+if ! swapon --show | grep -q "/swapfile"; then
+  fallocate -l 3G /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=3072
+  chmod 600 /swapfile
+  mkswap /swapfile
+  swapon /swapfile
+  sysctl -w vm.swappiness=10 || true
+  # persist across reboots if not already present
+  if ! grep -q "^/swapfile" /etc/fstab; then
+    echo "/swapfile none swap sw 0 0" >> /etc/fstab
+  fi
+fi
+
 curl -fsSL "https://deb.nodesource.com/setup_$${NODE_MAJOR}.x" | bash -
 DEBIAN_FRONTEND=noninteractive apt-get install -y nodejs
 
 install -d -o "$${APP_USER}" -g "$${APP_USER}" "$${WORKDIR}"
+
+# Install helper to refresh .env from Secret Manager before each start (place BEFORE unit creation)
+cat >/usr/local/bin/fetch-env.sh <<'EOF'
+#!/bin/bash
+set -euo pipefail
+APP_USER="$${1:-botuser}"
+WORKDIR="$${2:-/opt/tatekae-seisan-bot}"
+USE_SM="$${3:-false}"
+PROJECT_ID="$${4:-}"
+SECRET_ID="$${5:-}"
+
+if [ "$${USE_SM}" = "true" ] && [ -n "$${SECRET_ID}" ]; then
+  TOKEN=$(curl -s -H "Metadata-Flavor: Google" \
+    "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token" \
+    | python3 -c 'import json,sys; print(json.load(sys.stdin)["access_token"])')
+  curl -s -H "Authorization: Bearer $${TOKEN}" \
+    "https://secretmanager.googleapis.com/v1/projects/$${PROJECT_ID}/secrets/$${SECRET_ID}/versions/latest:access" \
+    | python3 -c 'import json,sys; print(json.load(sys.stdin)["payload"]["data"])' \
+    | base64 --decode > "$${WORKDIR}/.env"
+  chown "$${APP_USER}:$${APP_USER}" "$${WORKDIR}/.env"
+  chmod 600 "$${WORKDIR}/.env"
+fi
+exit 0
+EOF
+chmod 750 /usr/local/bin/fetch-env.sh
 
 CLONE_URL="$${REPO_URL}"
 
@@ -57,9 +95,14 @@ else
   runuser -u "$${APP_USER}" -- git -C "$${WORKDIR}" pull --ff-only
 fi
 
-runuser -u "$${APP_USER}" -- npm --prefix "$${WORKDIR}" ci || \
-  runuser -u "$${APP_USER}" -- npm --prefix "$${WORKDIR}" install
-runuser -u "$${APP_USER}" -- npm --prefix "$${WORKDIR}" run build
+npminstall() {
+  runuser -u "$${APP_USER}" -- npm --prefix "$${WORKDIR}" ci && return 0
+  runuser -u "$${APP_USER}" -- npm --prefix "$${WORKDIR}" install && return 0
+  return 1
+}
+
+retry npminstall
+runuser -u "$${APP_USER}" -- env NODE_OPTIONS=--max-old-space-size=1536 npm --prefix "$${WORKDIR}" run build
 
 cat <<EOF_SERVICE >/etc/systemd/system/$${SERVICE_NAME}.service
 [Unit]
@@ -70,6 +113,7 @@ After=network.target
 Type=simple
 WorkingDirectory=$${WORKDIR}
 EnvironmentFile=$${WORKDIR}/.env
+ExecStartPre=/usr/local/bin/fetch-env.sh $${APP_USER} $${WORKDIR} $${USE_SECRET_MANAGER} $${PROJECT_ID} $${SECRET_ID}
 ExecStart=/usr/bin/node dist/index.js
 Restart=always
 User=$${APP_USER}
