@@ -54,7 +54,7 @@ install -d -o "$${APP_USER}" -g "$${APP_USER}" "$${WORKDIR}"
 # Install helper to refresh .env from Secret Manager before each start (place BEFORE unit creation)
 cat >/usr/local/bin/fetch-env.sh <<'EOF'
 #!/bin/bash
-set -euo pipefail
+set -u
 APP_USER="$${1:-botuser}"
 WORKDIR="$${2:-/opt/tatekae-seisan-bot}"
 USE_SM="$${3:-false}"
@@ -62,19 +62,23 @@ PROJECT_ID="$${4:-}"
 SECRET_ID="$${5:-}"
 
 if [ "$${USE_SM}" = "true" ] && [ -n "$${SECRET_ID}" ]; then
-  TOKEN=$(curl -s -H "Metadata-Flavor: Google" \
-    "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token" \
-    | python3 -c 'import json,sys; print(json.load(sys.stdin)["access_token"])')
-  curl -s -H "Authorization: Bearer $${TOKEN}" \
-    "https://secretmanager.googleapis.com/v1/projects/$${PROJECT_ID}/secrets/$${SECRET_ID}/versions/latest:access" \
-    | python3 -c 'import json,sys; print(json.load(sys.stdin)["payload"]["data"])' \
-    | base64 --decode > "$${WORKDIR}/.env"
-  chown "$${APP_USER}:$${APP_USER}" "$${WORKDIR}/.env"
-  chmod 600 "$${WORKDIR}/.env"
+  # 失敗しても ExecStartPre を失敗させない
+  (
+    set -euo pipefail
+    TOKEN=$(curl -s -H "Metadata-Flavor: Google" \
+      "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token" \
+      | python3 -c 'import json,sys; print(json.load(sys.stdin)["access_token"])')
+    curl -s -H "Authorization: Bearer $${TOKEN}" \
+      "https://secretmanager.googleapis.com/v1/projects/$${PROJECT_ID}/secrets/$${SECRET_ID}/versions/latest:access" \
+      | python3 -c 'import json,sys; print(json.load(sys.stdin)["payload"]["data"])' \
+      | base64 --decode > "$${WORKDIR}/.env"
+    chown "$${APP_USER}:$${APP_USER}" "$${WORKDIR}/.env"
+    chmod 600 "$${WORKDIR}/.env"
+  ) || echo "[fetch-env] warn: failed to refresh .env from Secret Manager" >&2
 fi
 exit 0
 EOF
-chmod 750 /usr/local/bin/fetch-env.sh
+chmod 755 /usr/local/bin/fetch-env.sh
 
 CLONE_URL="$${REPO_URL}"
 

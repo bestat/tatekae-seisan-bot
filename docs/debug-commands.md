@@ -29,6 +29,18 @@ systemctl cat tatekae-bot
 sudo systemctl status google-startup-scripts
 sudo journalctl -u google-startup-scripts -b --no-pager | tail -n 200
 ```
+- 進行状況の監視（ライブ追尾）
+```bash
+sudo journalctl -u google-startup-scripts -b -f
+```
+- どの工程で止まっているか（プロセス表示）
+```bash
+pgrep -fl 'npm|tsc|node|git|apt-get|curl'
+```
+- 完了判定（exited になったら完了）
+```bash
+sudo systemctl is-active google-startup-scripts
+```
 - インスタンスに付与された startup-script を取得（中身の検証）
 ```bash
 curl -H "Metadata-Flavor: Google" \
@@ -141,4 +153,3 @@ sudo grep -E '^(SLACK_|GOOGLE_|SHEET_TARGET|EXPENSE_CHANNEL_ID|ACCOUNTING_CHANNE
 メモ
 - 共有ドライブを使う場合: `GOOGLE_SHARED_DRIVE_ID` は 0A…（共有ドライブID）、`GOOGLE_DRIVE_ROOT_FOLDER_ID` は保存先フォルダID（1…）。
 - Secret 更新は「新バージョン追加 → サービス再起動（ExecStartPre が最新を取得）」の流れで反映されます。
-

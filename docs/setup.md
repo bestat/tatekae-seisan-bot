@@ -227,13 +227,22 @@
 
 7. **ログ・監視**
    - Journald: `journalctl -u tatekae-bot -f`
-   - Stackdriver (Cloud Logging) を有効化しておくと GUI で確認できます。
+- Stackdriver (Cloud Logging) を有効化しておくと GUI で確認できます。
 
 8. **バックアップ & セキュリティ**
    - 月次でディスクスナップショットを取得。
    - SSH は IAP トンネル推奨、`ufw` や Cloud Armor でアクセス制御。
 
 > Always Free 枠は 1 プロジェクトあたり e2-micro 1 台のみ対象です。別用途で枠を使っている場合は課金が発生する点に注意してください。
+
+### Compute Engine のサービスアカウントスコープについて
+Sheets/Drive へのアクセスは VM の OAuth スコープに依存します。Terraform ではインスタンスに以下のスコープを付与しています（変更不可のため、差し替えが必要になります）。
+
+- `https://www.googleapis.com/auth/spreadsheets`
+- `https://www.googleapis.com/auth/drive`
+- `https://www.googleapis.com/auth/drive.file`
+
+また、Sheets/Drive 側の共有設定として、対象スプレッドシートと保存先フォルダ（および共有ドライブを使用する場合はその共有ドライブ）のメンバーに、VM のサービスアカウント（例: `tatekae-bot@<project>.iam.gserviceaccount.com`）を追加してください。
 
 ---
 
