@@ -100,8 +100,9 @@ resource "google_compute_instance" "bot" {
 
   service_account {
     email  = google_service_account.bot.email
-    # Include Workspace API scopes explicitly for Sheets/Drive access
+    # Include cloud-platform (for Secret Manager etc.) and Workspace API scopes explicitly
     scopes = [
+      "https://www.googleapis.com/auth/cloud-platform",
       "https://www.googleapis.com/auth/drive",
       "https://www.googleapis.com/auth/drive.file",
       "https://www.googleapis.com/auth/spreadsheets",
