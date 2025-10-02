@@ -2,6 +2,7 @@ import { Readable } from 'node:stream';
 import { drive_v3 } from 'googleapis';
 import { format } from 'date-fns';
 import { AppConfig } from '../config';
+import { logger } from '../logger';
 
 interface UploadReceiptParams {
   data: Buffer;
@@ -123,13 +124,20 @@ export class DriveService {
         },
       });
     } catch (error) {
-      // If permission already exists, suppress the error
-      if (
-        !(error instanceof Error &&
-          (error.message.includes('alreadyShared') || error.message.includes('duplicate'))) // best-effort guard
-      ) {
-        throw error;
+      // If permission already exists or parent grants broader permission, suppress the error
+      const msg = error instanceof Error ? error.message : String(error);
+      // Try to read reason from Google error payload if available
+      const reason = (error as any)?.response?.data?.error?.errors?.[0]?.reason || (error as any)?.errors?.[0]?.reason;
+      const benign =
+        msg.includes('alreadyShared') ||
+        msg.includes('duplicate') ||
+        msg.includes('less than the inherited access') ||
+        reason === 'cannotChangeInheritedAccess';
+      if (benign) {
+        logger.warn({ fileId, reason, msg }, 'Skipping domain permission change due to inherited or duplicate access');
+        return;
       }
+      throw error;
     }
   }
 
