@@ -75,26 +75,35 @@ async function bootstrap() {
     }
   });
 
+  // Handle file uploads posted in threads. Slack may send these as
+  // - message with subtype 'file_share' (files on the top level), or
+  // - message with subtype 'message_replied' where the actual files are nested under `message.files`.
   app.event('message', async ({ event }) => {
-    const message = event as any;
-    if (message.subtype && message.subtype !== 'file_share') {
+    const raw = event as any;
+
+    // Ignore bot/self and non-file-related message subtypes early
+    const subtype: string | undefined = raw.subtype;
+    const nested = subtype === 'message_replied' && raw.message ? raw.message : undefined;
+
+    const source = nested ?? raw;
+    const user = source.user as string | undefined;
+    const files = (source.files as Array<any> | undefined) ?? [];
+
+    // Only continue when this looks like a user file upload
+    if (!user || raw.bot_id) {
       return;
     }
-    if (message.user === undefined || message.bot_id) {
-      return;
-    }
-    const files = message.files as Array<any> | undefined;
-    if (!files || files.length === 0) {
+    if (files.length === 0) {
       return;
     }
 
     await expenseService.handleReceiptMessage({
-      user: message.user,
+      user,
       files,
-      channel: message.channel,
-      thread_ts: message.thread_ts,
-      ts: message.ts,
-      text: message.text,
+      channel: raw.channel,
+      thread_ts: source.thread_ts ?? raw.thread_ts ?? raw.ts,
+      ts: source.ts ?? raw.ts,
+      text: source.text ?? raw.text,
     });
   });
 
