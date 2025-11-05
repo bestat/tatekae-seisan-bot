@@ -33,7 +33,7 @@ retry apt-get install -y \
   build-essential \
   python3
 
-# Add swap (3GB) to avoid OOM during TypeScript build on e2-micro
+# Add swap (3GB) - useful for various operations, not just TypeScript build
 if ! swapon --show | grep -q "/swapfile"; then
   fallocate -l 3G /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=3072
   chmod 600 /swapfile
@@ -106,7 +106,9 @@ npminstall() {
 }
 
 retry npminstall
-runuser -u "$${APP_USER}" -- env NODE_OPTIONS=--max-old-space-size=1536 npm --prefix "$${WORKDIR}" run build
+# dist/ is now included in git, so build step is optional
+# Uncomment the line below if you need to rebuild dist/ on the VM
+# runuser -u "$${APP_USER}" -- env NODE_OPTIONS=--max-old-space-size=1536 npm --prefix "$${WORKDIR}" run build
 
 cat <<EOF_SERVICE >/etc/systemd/system/$${SERVICE_NAME}.service
 [Unit]
