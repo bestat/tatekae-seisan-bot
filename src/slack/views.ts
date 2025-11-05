@@ -43,10 +43,40 @@ export function buildExpenseModal(config: AppConfig, userName: string): View {
       },
       {
         type: 'input',
+        block_id: 'currency_block',
+        label: {
+          type: 'plain_text',
+          text: '通貨',
+        },
+        element: {
+          type: 'static_select',
+          action_id: 'currency',
+          placeholder: {
+            type: 'plain_text',
+            text: '選択してください',
+          },
+          options: [
+            {
+              text: { type: 'plain_text', text: 'JPY (¥)' },
+              value: 'JPY',
+            },
+            {
+              text: { type: 'plain_text', text: 'USD ($)' },
+              value: 'USD',
+            },
+          ],
+          initial_option:
+            config.app.currency === 'USD'
+              ? { text: { type: 'plain_text', text: 'USD ($)' }, value: 'USD' }
+              : { text: { type: 'plain_text', text: 'JPY (¥)' }, value: 'JPY' },
+        },
+      },
+      {
+        type: 'input',
         block_id: 'amount_block',
         label: {
           type: 'plain_text',
-          text: '金額 (円)',
+          text: '金額',
         },
         element: {
           type: 'plain_text_input',

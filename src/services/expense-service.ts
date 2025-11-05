@@ -20,6 +20,7 @@ interface ParsedSubmission {
   amount: number;
   usageDate: Date;
   remarks: string;
+  currency: string;
 }
 
 interface ReceiptMessageEvent {
@@ -79,7 +80,7 @@ export class ExpenseService {
     const { userId, view } = context;
     const parsed = submission ?? this.parseSubmission(view);
 
-    const { expenseTitle, amount, usageDate, remarks } = parsed;
+    const { expenseTitle, amount, usageDate, remarks, currency } = parsed;
 
     const userInfo = await this.slack.users.info({ user: userId });
     const applicantName = userInfo.user?.profile?.real_name || userInfo.user?.profile?.display_name || `<@${userId}>`;
@@ -97,6 +98,7 @@ export class ExpenseService {
         amount,
         usageDate,
         remarks,
+        currency,
       }),
     });
 
@@ -115,7 +117,7 @@ export class ExpenseService {
       applicantName,
       expenseTitle,
       amount,
-      currency: this.config.app.currency,
+      currency,
       usageDate: format(usageDate, 'yyyy-MM-dd'),
       remarks,
       sheetTarget,
@@ -144,7 +146,7 @@ export class ExpenseService {
 
     await this.slack.chat.postMessage({
       channel: this.config.slack.accountingChannelId,
-      text: `新しい立替精算申請: *${requestId}* - <@${userId}> が ${amount.toLocaleString('ja-JP')} ${this.config.app.currency} を申請しました。`,
+      text: `新しい立替精算申請: *${requestId}* - <@${userId}> が ${amount.toLocaleString('ja-JP')} ${currency} を申請しました。`,
     });
 
     return {
@@ -322,12 +324,13 @@ export class ExpenseService {
     amount: number;
     usageDate: Date;
     remarks: string;
+    currency: string;
   }): string {
     const usageDateStr = format(params.usageDate, 'yyyy-MM-dd');
     const amountStr = params.amount.toLocaleString('ja-JP');
     const remarks = params.remarks ? `\n• 備考: ${params.remarks}` : '';
 
-    return `*${params.requestId}* 立替精算申請\n• 申請者: <@${params.applicantSlackId}> (${params.applicantName})\n• 経費内容: ${params.expenseTitle}\n• 金額: ${amountStr} ${this.config.app.currency}\n• 利用日: ${usageDateStr}${remarks}`;
+    return `*${params.requestId}* 立替精算申請\n• 申請者: <@${params.applicantSlackId}> (${params.applicantName})\n• 経費内容: ${params.expenseTitle}\n• 金額: ${amountStr} ${params.currency}\n• 利用日: ${usageDateStr}${remarks}`;
   }
 
   private resolveSheetTarget(_slackUserId: string): SheetTarget {
@@ -340,6 +343,7 @@ export class ExpenseService {
     let expenseTitle = '';
     let amount = 0;
     let usageDate: Date | undefined;
+    let currency = '';
 
     try {
       expenseTitle = this.getInputValue(values, 'expense_title_block', 'expense_title');
@@ -355,6 +359,12 @@ export class ExpenseService {
       amount = this.parseAmount(raw);
     } catch (error) {
       errors.amount_block = '金額は半角の数値で入力してください';
+    }
+
+    try {
+      currency = this.getSelectValue(values, 'currency_block', 'currency');
+    } catch (error) {
+      errors.currency_block = '通貨を選択してください';
     }
 
     try {
@@ -375,6 +385,7 @@ export class ExpenseService {
       amount,
       usageDate,
       remarks,
+      currency,
     };
   }
 
@@ -406,6 +417,19 @@ export class ExpenseService {
   ): string | undefined {
     const block = values[blockId]?.[actionId];
     return block?.value?.trim();
+  }
+
+  private getSelectValue(
+    values: ViewSubmitAction['view']['state']['values'],
+    blockId: string,
+    actionId: string,
+  ): string {
+    const block = values[blockId]?.[actionId] as any;
+    const value = block?.selected_option?.value;
+    if (!value) {
+      throw new Error(`Missing required select field: ${blockId}.${actionId}`);
+    }
+    return String(value);
   }
 
   private parseAmount(raw: string): number {
